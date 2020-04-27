@@ -140,11 +140,11 @@ class BinarySearchTree {
   }
 
   countNodes(node) {
-    let count = 0;
+    let counter = 0;
     if (node !== null) {
-      count++
-      count = count + this.countNodes(node.left)
-      count = count + this.countNodes(node.right)
+      counter++
+      counter = counter + this.countNodes(node.left)
+      counter = counter + this.countNodes(node.right)
     }
     return count
   }
