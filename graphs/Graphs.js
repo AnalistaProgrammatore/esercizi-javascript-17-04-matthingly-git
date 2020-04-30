@@ -35,14 +35,14 @@ class Graph {
 
   display() {
     let graph = '';
-    for(const vertex of this.vertex) {
+    for (const vertex of this.vertex) {
       const edges = this.edges[vertex].map(edge => edge.vertex)
       graph += `${vertex} -> ${edges.join(', ')} \n`
     }
     console.log(graph)
   }
 
-  dfs(vertex){
+  dfs(vertex, callback) {
     // creo la struttura dati di appoggio e il Set dei vertici esplorati
     const stack = new Stack(this.vertex.length)
     const explored = new Set()
@@ -50,11 +50,11 @@ class Graph {
     stack.push(vertex)
     explored.add(vertex)
     // MAIN LOOP finchè la struttura di appoggio non è vuota
-    while(!stack.isEmpty()){
+    while (!stack.isEmpty()) {
       // estraggo l'elemento corrente
       const current = stack.pop()
       // applico una funzione all'elemento corrente
-      console.log(current)
+      callback(current)
       /**
        * 1. filtriamo la lista di adiacenze del vertice corrente eliminando i vertici già visistati
        * 2. per ogni connessione trovata inseriamo i suoi vertici nella struttura di appoggio
@@ -69,16 +69,16 @@ class Graph {
   }
 
   /** VEDI COMMENTI DSF */
-  bfs(vertex){
+  bfs(vertex, callback) {
     const queue = new Queue(this.vertex.length)
     const explored = new Set()
     queue.enqueue(vertex)
     explored.add(vertex)
-    while(!queue.isEmpty()) {
+    while (!queue.isEmpty()) {
       const current = queue.dequeue()
-      console.log(current)
+      callback(current)
       const edges = this.edges[current].filter(edge => !explored.has(edge.vertex))
-      for(const neighbor of edges) {
+      for (const neighbor of edges) {
         queue.enqueue(neighbor.vertex)
         explored.add(neighbor.vertex)
       }
@@ -86,14 +86,14 @@ class Graph {
   }
 
   dijkstra(startVertex) {
-    /** INIZIALIZZAZIONE 
+    /** INIZIALIZZAZIONE
      * preparo le distanze e i percorsi per immagazzinare i risultati
      * e istanzio la coda a priorità usata dall'algoritmo
     */
     const distances = {}
-    const paths = {}
+    const prev = {}
     const pq = new PriorityQueue(this.vertex.length * this.vertex.length)
-    
+
     /**
      * IMPOSTO IL RISULTATO DEL VERTICE DI PARTENZA
      * possiamo facilmente calcolare i risultati per il vertice di partenza essendo a distanza 0
@@ -101,7 +101,7 @@ class Graph {
      */
     distances[startVertex] = 0
     pq.enqueue(startVertex, 0)
-    
+
     /** INIZIALIZZO I RISULTATI
      * imposto la distanza iniziale di tutti i vertici tranne startVertex da startVertex ad infinito
      * e imposto tutti i percorsi ad un nuovo Set
@@ -109,21 +109,20 @@ class Graph {
      * e imposto il primo elemento di ogni vertice tranne startVertex a startVertex
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
      */
-    for(const vertex of this.vertex) {
-      if(vertex !== startVertex) {
+    for (const vertex of this.vertex) {
+      if (vertex !== startVertex) {
         distances[vertex] = Infinity
       }
-      paths[vertex] = new Set()
-      if(vertex !== startVertex) paths[vertex].add(startVertex)
+      prev[vertex] = null
     }
 
     /** MAIN LOOP */
-    while(!pq.isEmpty()) {
+    while (!pq.isEmpty()) {
       const minCurrentNode = pq.dequeue() // estraggo il vertice con peso minimo dalla coda
       const currentVertex = minCurrentNode.data
       /** CICLO I VICINI DEL VERTICE PRECEDENTEMENTE ESTRATTO */
-      for(const neighbor of this.edges[currentVertex]) {
-        /** 
+      for (const neighbor of this.edges[currentVertex]) {
+        /**
          * calcolo la distanza tra il vicino (nighbor) e la distanza immagazinata per il vertice
          * estratto precedentemente
          */
@@ -132,19 +131,36 @@ class Graph {
          * Se la distanza calcolata è minore alla distanza precedentemente immagazzinata
          * per il vicino (nighbor) allora ho trovato un cammino più breve da inserire tra i risultati
          */
-        if(distance < distances[neighbor.vertex]) {
+        if (distance < distances[neighbor.vertex]) {
           // inserisco la distanza minima trovata per il neighbor nei risultati
           distances[neighbor.vertex] = distance
           /*
           * inserisco il vertice analizzato precedentemente nel set dei percorsi di neighbor
           * escludendo startVertex dall'inserimento
           */
-          paths[neighbor.vertex].add(currentVertex)
+          prev[neighbor.vertex] = currentVertex
           // inserisco nella coda il neighbor trovato con priorità impostata alla nuova distanza
           pq.enqueue(neighbor.vertex, distance)
         }
       }
     }
+
+    /** FUNZIONE PER LA RICERCA DEL PERCORSO MINIMO DATO UN NODO DESTINAZIONE */
+    const getPath = dest => {
+      const paths = new Stack() // inizializza lo stack dei passi
+      while (prev[dest]) { // finchè l'algoritmo di dijkstra ha marcato un passaggio su un vertice
+        paths.push(dest) // inserisci il nodo destinazione nello stack
+        dest = prev[dest] // sostituisci il nuovo dest con il precedente nodo visionato da dijkstra
+      }
+      return paths.container
+    }
+
+    /** COSTRUISCI I PERCORSI PER TUTTI I VERTICI DEL GRAFO */
+    const paths = {}
+    for (const p in prev) {
+      paths[p] = getPath(p)
+    }
+
     return { distances, paths }
   }
 }
